@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test - Jumble</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>PWA Test - Jumble</h1>
+    
+    <div id="status-container"></div>
+    
+    <h2>Manual Tests</h2>
+    <button onclick="testServiceWorker()">Test Service Worker</button>
+    <button onclick="testCache()">Test Cache</button>
+    <button onclick="testOffline()">Test Offline Mode</button>
+    <button onclick="clearCache()">Clear Cache</button>
+    <button onclick="unregisterServiceWorker()">Unregister Service Worker</button>
+    
+    <h2>Installation</h2>
+    <button id="install-btn" onclick="installPWA()" disabled>Install PWA</button>
+    
+    <h2>Browser Support</h2>
+    <div id="browser-support"></div>
+    
+    <h2>Service Worker Details</h2>
+    <div id="sw-details"></div>
+    
+    <h2>Cache Information</h2>
+    <div id="cache-info"></div>
+
+    <script>
+        const statusContainer = document.getElementById('status-container');
+        const installBtn = document.getElementById('install-btn');
+        const browserSupport = document.getElementById('browser-support');
+        const swDetails = document.getElementById('sw-details');
+        const cacheInfo = document.getElementById('cache-info');
+        
+        let deferredPrompt;
+        
+        // Add status message
+        function addStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            statusContainer.appendChild(div);
+            console.log(`PWA Test: ${message}`);
+        }
+        
+        // Check browser support
+        function checkBrowserSupport() {
+            const support = [];
+            
+            if ('serviceWorker' in navigator) {
+                support.push('✅ Service Worker supported');
+            } else {
+                support.push('❌ Service Worker NOT supported');
+            }
+            
+            if ('caches' in window) {
+                support.push('✅ Cache API supported');
+            } else {
+                support.push('❌ Cache API NOT supported');
+            }
+            
+            if ('Notification' in window) {
+                support.push('✅ Notifications supported');
+            } else {
+                support.push('❌ Notifications NOT supported');
+            }
+            
+            if ('beforeinstallprompt' in window) {
+                support.push('✅ Install prompts supported');
+                installBtn.disabled = false;
+            } else {
+                support.push('❌ Install prompts NOT supported');
+            }
+            
+            if ('mediaSession' in navigator) {
+                support.push('✅ Media Session API supported');
+            } else {
+                support.push('❌ Media Session API NOT supported');
+            }
+            
+            browserSupport.innerHTML = support.join('<br>');
+        }
+        
+        // Test service worker
+        async function testServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    if (registrations.length > 0) {
+                        addStatus(`Found ${registrations.length} service worker registration(s)`, 'success');
+                        registrations.forEach((reg, index) => {
+                            addStatus(`SW ${index + 1}: ${reg.scope} (${reg.active ? 'active' : 'inactive'})`, 'info');
+                        });
+                        
+                        // Show service worker details
+                        swDetails.innerHTML = `
+                            <pre>${JSON.stringify(registrations.map(reg => ({
+                                scope: reg.scope,
+                                active: !!reg.active,
+                                installing: !!reg.installing,
+                                waiting: !!reg.waiting,
+                                scriptURL: reg.active?.scriptURL || 'N/A'
+                            })), null, 2)}</pre>
+                        `;
+                    } else {
+                        addStatus('No service worker registrations found', 'warning');
+                    }
+                } catch (error) {
+                    addStatus(`Service worker test failed: ${error.message}`, 'error');
+                }
+            } else {
+                addStatus('Service Worker not supported in this browser', 'error');
+            }
+        }
+        
+        // Test cache
+        async function testCache() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    if (cacheNames.length > 0) {
+                        addStatus(`Found ${cacheNames.length} cache(s)`, 'success');
+                        
+                        let cacheDetails = '';
+                        for (const cacheName of cacheNames) {
+                            const cache = await caches.open(cacheName);
+                            const requests = await cache.keys();
+                            addStatus(`Cache "${cacheName}": ${requests.length} items`, 'info');
+                            cacheDetails += `Cache: ${cacheName} (${requests.length} items)\n`;
+                            requests.forEach((request, index) => {
+                                if (index < 5) { // Show first 5 items
+                                    cacheDetails += `  - ${request.url}\n`;
+                                }
+                            });
+                            if (requests.length > 5) {
+                                cacheDetails += `  ... and ${requests.length - 5} more\n`;
+                            }
+                            cacheDetails += '\n';
+                        }
+                        
+                        cacheInfo.innerHTML = `<pre>${cacheDetails}</pre>`;
+                    } else {
+                        addStatus('No caches found', 'warning');
+                    }
+                } catch (error) {
+                    addStatus(`Cache test failed: ${error.message}`, 'error');
+                }
+            } else {
+                addStatus('Cache API not supported in this browser', 'error');
+            }
+        }
+        
+        // Test offline mode
+        async function testOffline() {
+            if (!navigator.onLine) {
+                addStatus('Already offline - testing cached content', 'info');
+            } else {
+                addStatus('Going offline for test... (Check console for network errors)', 'info');
+            }
+            
+            // Try to fetch a cached resource
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    addStatus('Successfully fetched main page (likely from cache)', 'success');
+                } else {
+                    addStatus(`Failed to fetch main page: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addStatus(`Network error (expected in offline mode): ${error.message}`, 'warning');
+            }
+        }
+        
+        // Clear cache
+        async function clearCache() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    addStatus(`Cleared ${cacheNames.length} cache(s)`, 'success');
+                    cacheInfo.innerHTML = '';
+                } catch (error) {
+                    addStatus(`Failed to clear cache: ${error.message}`, 'error');
+                }
+            } else {
+                addStatus('Cache API not supported', 'error');
+            }
+        }
+        
+        // Unregister service worker
+        async function unregisterServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    const unregistered = await Promise.all(
+                        registrations.map(reg => reg.unregister())
+                    );
+                    const count = unregistered.filter(Boolean).length;
+                    addStatus(`Unregistered ${count} service worker(s)`, 'success');
+                    swDetails.innerHTML = '';
+                } catch (error) {
+                    addStatus(`Failed to unregister service worker: ${error.message}`, 'error');
+                }
+            } else {
+                addStatus('Service Worker not supported', 'error');
+            }
+        }
+        
+        // Install PWA
+        async function installPWA() {
+            if (deferredPrompt) {
+                try {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        addStatus('PWA installation accepted', 'success');
+                    } else {
+                        addStatus('PWA installation declined', 'warning');
+                    }
+                    deferredPrompt = null;
+                } catch (error) {
+                    addStatus(`Installation failed: ${error.message}`, 'error');
+                }
+            } else {
+                addStatus('No installation prompt available', 'warning');
+            }
+        }
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.disabled = false;
+            addStatus('PWA install prompt available', 'info');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            addStatus('PWA was installed successfully', 'success');
+            installBtn.disabled = true;
+        });
+        
+        // Check online/offline status
+        function updateOnlineStatus() {
+            const status = navigator.onLine ? 'online' : 'offline';
+            addStatus(`Connection status: ${status}`, navigator.onLine ? 'success' : 'warning');
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // Initialize
+        checkBrowserSupport();
+        updateOnlineStatus();
+        testServiceWorker();
+        testCache();
+        
+        addStatus('PWA Test page loaded successfully', 'success');
+    </script>
+</body>
+</html>
