@@ -52,6 +52,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // 只生成manifest，不生成Service Worker
       includeAssets: [
         'favicon.ico',
         'favicon.svg',
@@ -95,100 +96,11 @@ export default defineConfig({
         lang: 'en',
         categories: ['social', 'news', 'productivity']
       },
-      // 使用自定义Service Worker
+      // 禁用workbox自动生成，使用自定义Service Worker
       workbox: {
-        globPatterns: [
-          '**/*.{js,css,html}',
-          '**/*.{ico,png,jpg,jpeg,svg}',
-          '**/*.{json,webmanifest}',
-          '**/*.{woff,woff2,ttf,eot}'
-        ],
-        globDirectory: process.env.NODE_ENV === 'development' ? 'dev-dist/' : 'dist/',
+        globPatterns: [],
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
-        cleanupOutdatedCaches: true,
-        globIgnores: [
-          '**/node_modules/**/*',
-          '**/workbox-*.js',
-          '**/sw.js.map'
-        ],
-        // 禁用Vite PWA插件的Service Worker生成，使用自定义版本
-        swSrc: './public/custom-sw.js',
-        swDest: 'sw.js',
-        // 禁用自动生成，使用自定义Service Worker
-        mode: 'generateSW',
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/esm\.sh\/.*$/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'esm-modules',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'image-cache',
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/.*\.(woff|woff2|ttf|eot)$/,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'font-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 365 * 24 * 60 * 60 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https?:\/\/.*\/(api|relay|nostr)/,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 5 * 60 // 5 minutes
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https?:\/\/.*/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'general-cache',
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 24 * 60 * 60 // 24 hours
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ]
+        cleanupOutdatedCaches: true
       },
       devOptions: {
         enabled: true,

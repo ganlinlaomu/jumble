@@ -8,12 +8,12 @@ import { useOfflineManager } from '@/hooks/useOfflineManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Wifi, 
-  WifiOff, 
-  Database, 
-  RefreshCw, 
-  Trash2, 
+import {
+  Wifi,
+  WifiOff,
+  Database,
+  RefreshCw,
+  Trash2,
   Download,
   Upload,
   FileText,
@@ -41,6 +41,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
   } = useOfflineManager();
 
   const [showDetails, setShowDetails] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -65,18 +66,18 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
   };
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 ${className}`}>
+    <div className={`fixed bottom-2 right-2 z-50 ${className}`}>
       {/* Main status indicator */}
-      <Card className="w-80 shadow-lg">
+      <Card className="w-56 shadow-lg sm:w-64 md:w-80">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-2">
               {isOnline ? (
-                <Wifi className="h-4 w-4 text-green-500" />
+                <Wifi className="h-3 w-3 text-green-500 sm:h-4 sm:w-4" />
               ) : (
-                <WifiOff className="h-4 w-4 text-red-500" />
+                <WifiOff className="h-3 w-3 text-red-500 sm:h-4 sm:w-4" />
               )}
-              <span className="font-medium">
+              <span className="font-medium hidden sm:inline">
                 {isOnline ? 'Online' : 'Offline'}
               </span>
             </div>
@@ -84,12 +85,13 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
               variant="ghost"
               size="sm"
               onClick={() => setShowDetails(!showDetails)}
+              className="h-6 w-6 sm:h-8 sm:w-8"
             >
-              <Settings className="h-4 w-4" />
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-3">
           {/* Status badges */}
           <div className="flex flex-wrap gap-2">
@@ -126,7 +128,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
               <RefreshCw className="h-3 w-3 mr-1" />
               Refresh
             </Button>
-            
+
             {!isOnline && hasOfflineData && (
               <Button
                 variant="outline"
@@ -138,7 +140,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
                 Offline
               </Button>
             )}
-            
+
             {isOnline && pendingSyncCount > 0 && (
               <Button
                 variant="default"
@@ -215,7 +217,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className })
                   <Trash2 className="h-3 w-3 mr-1" />
                   Clear Data
                 </Button>
-                
+
                 {isOffline && (
                   <Button
                     variant="outline"
