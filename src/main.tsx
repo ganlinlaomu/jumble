@@ -8,6 +8,9 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 
+// Initialize offline storage service
+import './services/offline-storage.service'
+
 // PWA Installation Prompt Handler
 let deferredPrompt: any
 

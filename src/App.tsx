@@ -2,6 +2,8 @@ import 'yet-another-react-lightbox/styles.css'
 import './index.css'
 
 import { Toaster } from '@/components/ui/sonner'
+import OfflineIndicator from '@/components/OfflineIndicator'
+import OfflineBanner from '@/components/OfflineBanner'
 import { BookmarksProvider } from '@/providers/BookmarksProvider'
 import { ContentPolicyProvider } from '@/providers/ContentPolicyProvider'
 import { DeletedEventProvider } from '@/providers/DeletedEventProvider'
@@ -46,6 +48,8 @@ export default function App(): JSX.Element {
                                         <KindFilterProvider>
                                           <PageManager />
                                           <Toaster />
+                                          <OfflineBanner />
+                                          <OfflineIndicator />
                                         </KindFilterProvider>
                                       </MediaUploadServiceProvider>
                                     </ReplyProvider>

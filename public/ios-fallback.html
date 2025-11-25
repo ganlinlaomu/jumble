@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Safari Fallback - Jumble</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.secondary {
+            background-color: #6c757d;
+        }
+        .button.secondary:hover {
+            background-color: #545b62;
+        }
+        .steps {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+        }
+        .steps ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .steps li {
+            margin: 8px 0;
+        }
+        .compatibility-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .compatibility-item {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .supported {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .not-supported {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .limited {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 10px;
+        }
+        .icon {
+            font-size: 2em;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 iOS Safari Compatibility</h1>
+    
+    <div class="card warning">
+        <h2><span class="icon">⚠️</span>Limited PWA Support Detected</h2>
+        <p>Your iOS Safari browser has limited support for Progressive Web App features. This page provides alternative solutions for the best experience.</p>
+    </div>
+
+    <div class="card info">
+        <h2>🔍 Compatibility Check</h2>
+        <div id="compatibility-details">
+            <p>Detecting your iOS Safari compatibility...</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📋 Alternative Solutions</h2>
+        
+        <div class="steps">
+            <h3>🔄 Enable Basic Caching</h3>
+            <p>While Service Worker caching isn't available, you can still enable basic caching features:</p>
+            <button class="button" onclick="enableBasicCaching()">Enable Basic Caching</button>
+            <button class="button secondary" onclick="clearBasicCache()">Clear Cache</button>
+        </div>
+
+        <div class="steps">
+            <h3>📱 Add to Home Screen</h3>
+            <p>Get an app-like experience by adding Jumble to your home screen:</p>
+            <ol>
+                <li>Tap the <strong>Share button</strong> (square with arrow) at the bottom of Safari</li>
+                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> to confirm</li>
+                <li>Jumble will now appear on your home screen with an app icon</li>
+            </ol>
+        </div>
+
+        <div class="steps">
+            <h3>🌐 Use Alternative Browsers</h3>
+            <p>For full PWA support, consider using these browsers on iOS:</p>
+            <ul>
+                <li><strong>Google Chrome</strong> - Full Service Worker support</li>
+                <li><strong>Firefox</strong> - Full Service Worker support</li>
+                <li><strong>Microsoft Edge</strong> - Full Service Worker support</li>
+            </ul>
+        </div>
+
+        <div class="steps">
+            <h3>📱 Update iOS</h3>
+            <p>Service Worker support was introduced in iOS 11.3. For the best experience:</p>
+            <ol>
+                <li>Go to <strong>Settings</strong> → <strong>General</strong> → <strong>Software Update</strong></li>
+                <li>Install the latest iOS version (11.3 or later)</li>
+                <li>Restart your device after updating</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="card success">
+        <h2>✅ Available Features</h2>
+        <p>Even without Service Worker support, you can still enjoy these features:</p>
+        <ul>
+            <li>✅ Full Nostr client functionality</li>
+            <li>✅ Real-time relay connections</li>
+            <li>✅ User profiles and social features</li>
+            <li>✅ Content creation and publishing</li>
+            <li>✅ Basic offline data storage (IndexedDB)</li>
+            <li>✅ Home screen app experience</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>🔧 Manual Cache Management</h2>
+        <div id="cache-info">
+            <p>Checking available storage options...</p>
+        </div>
+        <button class="button" onclick="checkStorage()">Check Storage</button>
+        <button class="button secondary" onclick="testStorage()">Test Storage</button>
+    </div>
+
+    <div class="card info">
+        <h2>📞 Need Help?</h2>
+        <p>If you're experiencing issues with PWA features on iOS Safari:</p>
+        <ul>
+            <li>Check the <a href="/pwa-test.html" style="color: #007bff;">PWA Test Page</a> for detailed diagnostics</li>
+            <li>Ensure you're using the latest iOS version</li>
+            <li>Try clearing Safari's website data</li>
+            <li>Consider using an alternative browser for full PWA features</li>
+        </ul>
+    </div>
+
+    <script>
+        // iOS Safari compatibility detection
+        function detectIOSCompatibility() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isSafari = /Safari/.test(navigator.userAgent) && /Apple Computer/.test(navigator.vendor);
+            
+            let html = '<div class="compatibility-info">';
+            
+            // Service Worker Support
+            const swSupported = 'serviceWorker' in navigator;
+            html += `<div class="compatibility-item ${swSupported ? 'supported' : 'not-supported'}">`;
+            html += `<h4>Service Worker</h4>`;
+            html += `<p>${swSupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+            html += '</div>';
+            
+            // Cache API Support
+            const cacheSupported = 'caches' in window;
+            html += `<div class="compatibility-item ${cacheSupported ? 'supported' : 'not-supported'}">`;
+            html += `<h4>Cache API</h4>`;
+            html += `<p>${cacheSupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+            html += '</div>';
+            
+            // IndexedDB Support
+            const indexedDBSupported = 'indexedDB' in window;
+            html += `<div class="compatibility-item ${indexedDBSupported ? 'supported' : 'not-supported'}">`;
+            html += `<h4>IndexedDB</h4>`;
+            html += `<p>${indexedDBSupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+            html += '</div>';
+            
+            // LocalStorage Support
+            const localStorageSupported = 'localStorage' in window;
+            html += `<div class="compatibility-item ${localStorageSupported ? 'supported' : 'not-supported'}">`;
+            html += `<h4>LocalStorage</h4>`;
+            html += `<p>${localStorageSupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+            html += '</div>';
+            
+            html += '</div>';
+            
+            // Add recommendations
+            html += '<div style="margin-top: 20px;">';
+            html += '<h4>🔧 Recommendations:</h4>';
+            html += '<ul>';
+            
+            if (isIOS && isSafari) {
+                if (!swSupported || !cacheSupported) {
+                    html += '<li>Update iOS to 11.3 or later for Service Worker support</li>';
+                    html += '<li>Use "Add to Home Screen" for app-like experience</li>';
+                    html += '<li>Consider Chrome or Firefox for full PWA features</li>';
+                }
+            }
+            
+            if (indexedDBSupported) {
+                html += '<li>Use IndexedDB for data storage (available)</li>';
+            }
+            
+            if (localStorageSupported) {
+                html += '<li>Use LocalStorage for settings (available)</li>';
+            }
+            
+            html += '</ul>';
+            html += '</div>';
+            
+            document.getElementById('compatibility-details').innerHTML = html;
+        }
+
+        // Basic caching functions
+        function enableBasicCaching() {
+            try {
+                // Use LocalStorage for basic caching
+                const cacheData = {
+                    version: '1.0',
+                    timestamp: Date.now(),
+                    enabled: true
+                };
+                localStorage.setItem('jumble-basic-cache', JSON.stringify(cacheData));
+                
+                // Use IndexedDB if available
+                if ('indexedDB' in window) {
+                    setupIndexedDBCache();
+                }
+                
+                alert('✅ Basic caching enabled successfully!');
+            } catch (error) {
+                alert('❌ Failed to enable basic caching: ' + error.message);
+            }
+        }
+
+        function clearBasicCache() {
+            try {
+                localStorage.removeItem('jumble-basic-cache');
+                
+                // Clear IndexedDB if available
+                if ('indexedDB' in window) {
+                    indexedDB.deleteDatabase('jumble-fallback-cache');
+                }
+                
+                alert('✅ Basic cache cleared successfully!');
+            } catch (error) {
+                alert('❌ Failed to clear basic cache: ' + error.message);
+            }
+        }
+
+        function setupIndexedDBCache() {
+            const request = indexedDB.open('jumble-fallback-cache', 1);
+            
+            request.onerror = () => {
+                console.error('Failed to open IndexedDB');
+            };
+            
+            request.onsuccess = (event) => {
+                console.log('IndexedDB fallback cache ready');
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                if (!db.objectStoreNames.contains('static-cache')) {
+                    db.createObjectStore('static-cache', { keyPath: 'url' });
+                }
+                if (!db.objectStoreNames.contains('user-data')) {
+                    db.createObjectStore('user-data', { keyPath: 'key' });
+                }
+            };
+        }
+
+        function checkStorage() {
+            let html = '<h4>Available Storage Options:</h4>';
+            
+            // LocalStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                html += '<p>✅ LocalStorage: Available</p>';
+            } catch (e) {
+                html += '<p>❌ LocalStorage: Not Available</p>';
+            }
+            
+            // IndexedDB
+            if ('indexedDB' in window) {
+                html += '<p>✅ IndexedDB: Available</p>';
+            } else {
+                html += '<p>❌ IndexedDB: Not Available</p>';
+            }
+            
+            // SessionStorage
+            try {
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+                html += '<p>✅ SessionStorage: Available</p>';
+            } catch (e) {
+                html += '<p>❌ SessionStorage: Not Available</p>';
+            }
+            
+            // Check current usage
+            if (navigator.storage) {
+                navigator.storage.estimate().then(estimate => {
+                    html += `<p>💾 Storage Usage: ${Math.round(estimate.usage / 1024 / 1024)}MB / ${Math.round(estimate.quota / 1024 / 1024)}MB</p>`;
+                    document.getElementById('cache-info').innerHTML = html;
+                });
+            } else {
+                document.getElementById('cache-info').innerHTML = html;
+            }
+        }
+
+        function testStorage() {
+            try {
+                // Test LocalStorage
+                localStorage.setItem('jumble-test', 'test-value');
+                const value = localStorage.getItem('jumble-test');
+                localStorage.removeItem('jumble-test');
+                
+                if (value === 'test-value') {
+                    alert('✅ LocalStorage test passed!');
+                } else {
+                    alert('❌ LocalStorage test failed!');
+                }
+            } catch (error) {
+                alert('❌ Storage test failed: ' + error.message);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            detectIOSCompatibility();
+            checkStorage();
+        });
+    </script>
+</body>
+</html>

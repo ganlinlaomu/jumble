@@ -87,6 +87,9 @@
     <h2>Installation</h2>
     <button id="install-btn" onclick="installPWA()" disabled>Install PWA</button>
 
+    <h2>📱 iOS Safari Compatibility</h2>
+    <div id="ios-compatibility"></div>
+
     <h2>Browser Support</h2>
     <div id="browser-support"></div>
 
@@ -96,13 +99,19 @@
     <h2>Cache Information</h2>
     <div id="cache-info"></div>
 
-    <script src="cache-test.js"></script>
+    <h2>🔄 Fallback Solutions</h2>
+    <div id="fallback-solutions"></div>
+
+    <script src="ios-compatibility.js"></script>
+<script src="cache-test.js"></script>
 <script>
         const statusContainer = document.getElementById('status-container');
         const installBtn = document.getElementById('install-btn');
         const browserSupport = document.getElementById('browser-support');
         const swDetails = document.getElementById('sw-details');
         const cacheInfo = document.getElementById('cache-info');
+        const iosCompatibility = document.getElementById('ios-compatibility');
+        const fallbackSolutions = document.getElementById('fallback-solutions');
 
         let deferredPrompt;
 
@@ -113,6 +122,38 @@
             div.textContent = message;
             statusContainer.appendChild(div);
             console.log(`PWA Test: ${message}`);
+        }
+
+        // Check iOS Safari compatibility
+        function checkIOSCompatibility() {
+            if (window.iosCompatibility) {
+                const report = window.iosCompatibility.getCompatibilityReport();
+
+                let html = '<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">';
+
+                if (report.isIOS) {
+                    html += `<h4>📱 iOS Device Detected</h4>`;
+                    html += `<p><strong>iOS Version:</strong> ${report.iosVersion ? report.iosVersion.version : 'Unknown'}</p>`;
+                    html += `<p><strong>Service Worker:</strong> ${report.serviceWorkerSupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+                    html += `<p><strong>Cache API:</strong> ${report.cacheAPISupported ? '✅ Supported' : '❌ Not Supported'}</p>`;
+                    html += `<p><strong>PWA Status:</strong> ${report.pwaSupported ? '✅ Fully Supported' : '⚠️ Limited'}</p>`;
+
+                    if (report.recommendations.length > 0) {
+                        html += '<h5>🔧 Recommendations:</h5><ul style="margin-left: 20px;">';
+                        report.recommendations.forEach(rec => {
+                            html += `<li>${rec}</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                } else {
+                    html += `<p>ℹ️ Not running on iOS Safari</p>`;
+                }
+
+                html += '</div>';
+                iosCompatibility.innerHTML = html;
+            } else {
+                iosCompatibility.innerHTML = '<p>⚠️ iOS compatibility detection not loaded</p>';
+            }
         }
 
         // Check browser support
@@ -335,11 +376,60 @@
             }
         }
 
+        // Show fallback solutions
+        function showFallbackSolutions() {
+            const isIOS = window.iosCompatibility && window.iosCompatibility.isIOS;
+            const swSupported = 'serviceWorker' in navigator;
+            const cacheSupported = 'caches' in window;
+
+            let html = '<div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">';
+
+            if (isIOS && (!swSupported || !cacheSupported)) {
+                html += '<h4>🔄 iOS Safari Fallback Solutions</h4>';
+                html += '<p>Since Service Worker/Cache API is not supported, here are alternative solutions:</p>';
+                html += '<ul style="margin-left: 20px;">';
+                html += '<li><strong>IndexedDB:</strong> Available for structured data storage</li>';
+                html += '<li><strong>LocalStorage:</strong> Available for small key-value data</li>';
+                html += '<li><strong>SessionStorage:</strong> Available for session-specific data</li>';
+                html += '<li><strong>App Cache:</strong> Legacy HTML5 application cache (limited)</li>';
+                html += '</ul>';
+
+                html += '<h5>🔧 Enable Advanced Features:</h5>';
+                html += '<ul style="margin-left: 20px;">';
+                html += '<li>Update iOS to version 11.3 or later</li>';
+                <li>Use Chrome or Firefox for full PWA support</li>';
+                html += '<li>Add to Home Screen for app-like experience</li>';
+                html += '</ul>';
+
+                html += '<h5>📱 Add to Home Screen:</h5>';
+                html += '<ol style="margin-left: 20px;">';
+                html += '<li>Tap the Share button (square with arrow)</li>';
+                html += '<li>Scroll down and tap "Add to Home Screen"</li>';
+                html += '<li>Tap "Add" to confirm</li>';
+                html += '</ol>';
+            } else if (!swSupported || !cacheSupported) {
+                html += '<h4>🔄 Fallback Solutions</h4>';
+                html += '<p>Your browser has limited PWA support. Consider:</p>';
+                html += '<ul style="margin-left: 20px;">';
+                html += '<li>Update your browser to the latest version</li>';
+                html += '<li>Try Chrome or Firefox for full PWA support</li>';
+                html += '<li>Use the web version with limited offline features</li>';
+                html += '</ul>';
+            } else {
+                html += '<p>✅ Full PWA support available - no fallback needed</p>';
+            }
+
+            html += '</div>';
+            fallbackSolutions.innerHTML = html;
+        }
+
         // Initialize
+        checkIOSCompatibility();
         checkBrowserSupport();
         updateOnlineStatus();
         testServiceWorker();
         testCache();
+        showFallbackSolutions();
 
         addStatus('PWA Test page loaded successfully', 'success');
     </script>

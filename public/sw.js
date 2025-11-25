@@ -4,6 +4,8 @@ const IMAGE_CACHE_NAME = 'jumble-images-v1';
 const API_CACHE_NAME = 'jumble-api-v1';
 const FONT_CACHE_NAME = 'jumble-fonts-v1';
 const ESM_CACHE_NAME = 'jumble-esm-v1';
+const POST_CACHE_NAME = 'jumble-posts-v1';
+const USER_CACHE_NAME = 'jumble-user-data-v1';
 
 // Cache URLs
 const STATIC_URLS = [
@@ -15,61 +17,89 @@ const STATIC_URLS = [
   '/pwa-192x192.png',
   '/pwa-512x512.png',
   '/pwa-monochrome.svg',
-  '/manifest.webmanifest'
+  '/manifest.webmanifest',
+  '/pwa-test.html',
+  '/ios-fallback.html',
+  '/ios-compatibility.js',
+  '/cache-test.js'
 ];
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker installing...');
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_URLS))
-      .then(() => self.skipWaiting())
+      .then((cache) => {
+        console.log('📦 Caching static assets...');
+        return cache.addAll(STATIC_URLS);
+      })
+      .then(() => {
+        console.log('✅ Static assets cached successfully');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('❌ Failed to cache static assets:', error);
+      })
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  console.log('🔄 Service Worker activating...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('🧹 Cleaning up old caches...');
+      const currentCaches = [
+        STATIC_CACHE_NAME,
+        IMAGE_CACHE_NAME,
+        API_CACHE_NAME,
+        FONT_CACHE_NAME,
+        ESM_CACHE_NAME,
+        POST_CACHE_NAME,
+        USER_CACHE_NAME
+      ];
+
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE_NAME && 
-              cacheName !== IMAGE_CACHE_NAME && 
-              cacheName !== API_CACHE_NAME && 
-              cacheName !== FONT_CACHE_NAME && 
-              cacheName !== ESM_CACHE_NAME) {
+          if (!currentCaches.includes(cacheName)) {
+            console.log(`🗑️  Deleting old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('✅ Service Worker activated successfully');
+      return self.clients.claim();
+    }).catch((error) => {
+      console.error('❌ Service Worker activation failed:', error);
+    })
   );
 });
 
 // Fetch event - handle different types of requests
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
+
   // Handle different URL patterns
   if (url.origin === self.location.origin) {
     // Same origin requests
-    if (url.pathname.endsWith('.png') || 
-        url.pathname.endsWith('.jpg') || 
-        url.pathname.endsWith('.jpeg') || 
-        url.pathname.endsWith('.svg') || 
-        url.pathname.endsWith('.gif') || 
-        url.pathname.endsWith('.webp') || 
+    if (url.pathname.endsWith('.png') ||
+        url.pathname.endsWith('.jpg') ||
+        url.pathname.endsWith('.jpeg') ||
+        url.pathname.endsWith('.svg') ||
+        url.pathname.endsWith('.gif') ||
+        url.pathname.endsWith('.webp') ||
         url.pathname.endsWith('.ico')) {
       // Image files - Cache First
       event.respondWith(handleImageRequest(event.request));
-    } else if (url.pathname.endsWith('.woff') || 
-               url.pathname.endsWith('.woff2') || 
-               url.pathname.endsWith('.ttf') || 
+    } else if (url.pathname.endsWith('.woff') ||
+               url.pathname.endsWith('.woff2') ||
+               url.pathname.endsWith('.ttf') ||
                url.pathname.endsWith('.eot')) {
       // Font files - Cache First
       event.respondWith(handleFontRequest(event.request));
-    } else if (url.pathname.endsWith('.js') || 
-               url.pathname.endsWith('.css') || 
+    } else if (url.pathname.endsWith('.js') ||
+               url.pathname.endsWith('.css') ||
                url.pathname.endsWith('.html')) {
       // Static files - Stale While Revalidate
       event.respondWith(handleStaticRequest(event.request));
@@ -80,11 +110,15 @@ self.addEventListener('fetch', (event) => {
   } else if (url.hostname === 'esm.sh') {
     // ESM modules - Cache First with long expiration
     event.respondWith(handleEsmRequest(event.request));
-  } else if (url.pathname.includes('/api/') || 
-             url.pathname.includes('/relay/') || 
-             url.pathname.includes('/nostr')) {
-    // API/Nostr requests - Network First with short expiration
+  } else if (url.pathname.includes('/api/')) {
+    // API requests - Network First with short expiration
     event.respondWith(handleApiRequest(event.request));
+  } else if (url.pathname.includes('/relay/') ||
+             url.pathname.includes('/nostr') ||
+             url.searchParams.has('event') ||
+             url.searchParams.has('post')) {
+    // Nostr/Post requests - Special caching for user content
+    event.respondWith(handlePostRequest(event.request));
   } else {
     // Other cross-origin requests - Stale While Revalidate
     event.respondWith(handleCrossOriginRequest(event.request));
@@ -98,7 +132,7 @@ async function handleImageRequest(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       const cache = await caches.open(IMAGE_CACHE_NAME);
@@ -118,7 +152,7 @@ async function handleFontRequest(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       const cache = await caches.open(FONT_CACHE_NAME);
@@ -136,7 +170,7 @@ async function handleStaticRequest(request) {
   try {
     const cachedResponse = await caches.match(request);
     const fetchPromise = fetch(request);
-    
+
     if (cachedResponse) {
       // Return cached response immediately, but update cache in background
       fetchPromise.then((networkResponse) => {
@@ -147,7 +181,7 @@ async function handleStaticRequest(request) {
       });
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetchPromise;
     if (networkResponse.ok) {
       const cache = await caches.open(STATIC_CACHE_NAME);
@@ -167,7 +201,7 @@ async function handleEsmRequest(request) {
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       const cache = await caches.open(ESM_CACHE_NAME);
@@ -180,36 +214,85 @@ async function handleEsmRequest(request) {
   }
 }
 
-// Handle API requests - Network First
+// Handle API requests - Network First with enhanced caching
 async function handleApiRequest(request) {
   try {
     const cache = await caches.open(API_CACHE_NAME);
     const cachedResponse = await cache.match(request);
-    
+
     // Try network first with timeout
     const networkPromise = fetch(request);
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Network timeout')), 5000);
     });
-    
+
     try {
       const networkResponse = await Promise.race([networkPromise, timeoutPromise]);
       if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
+        // Clone the response to cache it
+        const responseToCache = networkResponse.clone();
+        cache.put(request, responseToCache);
         return networkResponse;
       }
     } catch (networkError) {
       console.log('Network request failed, trying cache:', networkError);
     }
-    
+
     // Fall back to cache if network failed
     if (cachedResponse) {
+      console.log('📦 Returning cached API response');
       return cachedResponse;
     }
-    
+
     throw new Error('No cached response available');
   } catch (error) {
     console.error('API fetch failed:', error);
+    throw error;
+  }
+}
+
+// Handle Nostr/Post requests - Special caching for user content
+async function handlePostRequest(request) {
+  try {
+    const cache = await caches.open(POST_CACHE_NAME);
+    const cachedResponse = await cache.match(request);
+
+    // For GET requests (reading posts), try cache first
+    if (request.method === 'GET') {
+      if (cachedResponse) {
+        console.log('📝 Returning cached post data');
+        // Update cache in background
+        fetch(request).then(networkResponse => {
+          if (networkResponse.ok) {
+            cache.put(request, networkResponse.clone());
+          }
+        });
+        return cachedResponse;
+      }
+    }
+
+    // For all requests, try network
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse.ok) {
+        // Cache successful responses
+        if (request.method === 'GET') {
+          cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+      }
+    } catch (networkError) {
+      console.log('Network request failed, trying cache:', networkError);
+    }
+
+    // Fall back to cache for GET requests
+    if (request.method === 'GET' && cachedResponse) {
+      return cachedResponse;
+    }
+
+    throw new Error('No cached response available');
+  } catch (error) {
+    console.error('Post fetch failed:', error);
     throw error;
   }
 }
@@ -219,7 +302,7 @@ async function handleNetworkFirstRequest(request) {
   try {
     const cache = await caches.open(STATIC_CACHE_NAME);
     const cachedResponse = await cache.match(request);
-    
+
     try {
       const networkResponse = await fetch(request);
       if (networkResponse.ok) {
@@ -229,11 +312,11 @@ async function handleNetworkFirstRequest(request) {
     } catch (networkError) {
       console.log('Network request failed, trying cache:', networkError);
     }
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     throw new Error('No cached response available');
   } catch (error) {
     console.error('Network first fetch failed:', error);
@@ -246,7 +329,7 @@ async function handleCrossOriginRequest(request) {
   try {
     const cachedResponse = await caches.match(request);
     const fetchPromise = fetch(request);
-    
+
     if (cachedResponse) {
       fetchPromise.then((networkResponse) => {
         if (networkResponse.ok) {
@@ -256,7 +339,7 @@ async function handleCrossOriginRequest(request) {
       });
       return cachedResponse;
     }
-    
+
     const networkResponse = await fetchPromise;
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
@@ -282,7 +365,7 @@ self.addEventListener('push', (event) => {
         url: data.url || '/'
       }
     };
-    
+
     event.waitUntil(
       self.registration.showNotification(data.title, options)
     );
@@ -292,7 +375,7 @@ self.addEventListener('push', (event) => {
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   if (event.notification.data && event.notification.data.url) {
     event.waitUntil(
       clients.openWindow(event.notification.data.url)
