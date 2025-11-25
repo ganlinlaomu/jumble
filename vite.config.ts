@@ -34,11 +34,34 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src')
     }
   },
+  build: {
+    // 为开发环境设置输出目录
+    outDir: process.env.NODE_ENV === 'development' ? 'dev-dist' : 'dist',
+    // 生成source map
+    sourcemap: true,
+    // 压缩代码
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false, // 保留console.log用于调试
+        drop_debugger: true
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-monochrome.svg'],
+      includeAssets: [
+        'favicon.ico',
+        'favicon.svg',
+        'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+        'pwa-monochrome.svg',
+        'robots.txt',
+        '.well-known/nostr.json'
+      ],
       manifest: {
         name: 'Jumble',
         short_name: 'Jumble',
@@ -72,11 +95,27 @@ export default defineConfig({
         lang: 'en',
         categories: ['social', 'news', 'productivity']
       },
+      // 使用自定义Service Worker
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg,json,woff,woff2,ttf,eot}'],
-        globDirectory: 'dist/',
+        globPatterns: [
+          '**/*.{js,css,html}',
+          '**/*.{ico,png,jpg,jpeg,svg}',
+          '**/*.{json,webmanifest}',
+          '**/*.{woff,woff2,ttf,eot}'
+        ],
+        globDirectory: process.env.NODE_ENV === 'development' ? 'dev-dist/' : 'dist/',
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
         cleanupOutdatedCaches: true,
+        globIgnores: [
+          '**/node_modules/**/*',
+          '**/workbox-*.js',
+          '**/sw.js.map'
+        ],
+        // 禁用Vite PWA插件的Service Worker生成，使用自定义版本
+        swSrc: './public/custom-sw.js',
+        swDest: 'sw.js',
+        // 禁用自动生成，使用自定义Service Worker
+        mode: 'generateSW',
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/esm\.sh\/.*$/,
